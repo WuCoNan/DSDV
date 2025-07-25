@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/wuconan/codes/DSDV/build",
+  "command": "/usr/bin/c++  -I/home/wuconan/codes/DSDV/include -g -g -O0 -std=gnu++17 -o CMakeFiles/dsdv_test.dir/src/test.cpp.o -c /home/wuconan/codes/DSDV/src/test.cpp",
+  "file": "/home/wuconan/codes/DSDV/src/test.cpp",
+  "output": "CMakeFiles/dsdv_test.dir/src/test.cpp.o"
+}
+]

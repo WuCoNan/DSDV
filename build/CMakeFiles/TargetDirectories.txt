@@ -1,0 +1,3 @@
+/home/wuconan/codes/DSDV/build/CMakeFiles/dsdv_test.dir
+/home/wuconan/codes/DSDV/build/CMakeFiles/edit_cache.dir
+/home/wuconan/codes/DSDV/build/CMakeFiles/rebuild_cache.dir
