@@ -1,0 +1,4 @@
+NetworkLayer:
+	邻接节点表？链路层通过注册的回调函数来进行修改？ip地址，metric？再调用DSDV的回调函数处理变化的节点？
+	NetworkLayerHandleChangedConnection(IpAddr dip,uint32_t metric);
+	DSDVHandleChangedConnection();

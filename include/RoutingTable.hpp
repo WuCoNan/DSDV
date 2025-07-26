@@ -6,21 +6,21 @@
 #include "Utils.hpp"
 namespace net
 {
+#define UNREACHABLE 1000
     struct RouteEntry
     {
         util::IpAddr dip;
         util::IpAddr next_hop;
-    };
-
-    struct DSDVRouteEntry : RouteEntry
-    {
         uint32_t metric;
         uint32_t sequence;
     };
 
-    template <typename EntryType>
-    class RoutingTableBase
+    class RoutingTable
     {
+    private:
+        using Table = std::unordered_map<util::IpAddr, RouteEntry>;
+        Table mtable_;
+
     public:
         std::optional<util::IpAddr> GetNextHop(util::IpAddr dip) const
         {
@@ -29,8 +29,9 @@ namespace net
             return std::nullopt;
         }
 
-        void UpdateRouteTable(util::IpAddr dip, const EntryType &entry)
+        void UpdateRouteTable(const RouteEntry &entry)
         {
+            util::IpAddr dip = entry.dip;
             if (mtable_.find(dip) != mtable_.end())
             {
                 mtable_[dip] = entry;
@@ -40,17 +41,25 @@ namespace net
                 mtable_.emplace(dip, entry);
             }
         }
-
-        std::optional<EntryType> Find(util::IpAddr dip) const
+        void Erase(util::IpAddr dip)
+        {
+            mtable_.erase(dip);
+        }
+        std::optional<RouteEntry> Find(util::IpAddr dip) const
         {
             if (mtable_.find(dip) != mtable_.end())
                 return mtable_.at(dip);
             return std::nullopt;
         }
-
-    private:
-        using Table = std::unordered_map<util::IpAddr, EntryType>;
-        Table mtable_;
+        std::vector<RouteEntry> GetAllEntry() const
+        {
+            std::vector<RouteEntry> entries;
+            for (auto &table_entry : mtable_)
+            {
+                entries.push_back(table_entry.second);
+            }
+            return entries;
+        }
     };
 
 }
