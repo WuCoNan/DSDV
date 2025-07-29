@@ -84,23 +84,51 @@ namespace net
         auto entries = mbroadcast_table_->GetAllEntry();
         for (auto &entry : entries)
         {
+            if (entry.dip == mlocal_ip_addr_)
+                entry.sequence += 2;
             SendDSDVPacket(entry);
         }
     }
 
     void DSDVProtocol::DSDVHandleChangedConnection(const std::unordered_map<util::IpAddr, uint32_t> &changed_connections)
     {
+        // 修改邻接表
+        for (auto &connection : changed_connections)
+        {
+            auto dip = connection.first, metric = connection.second;
+            if (metric == UNREACHABLE)
+                madjacent_table_.erase(dip);
+            else
+                madjacent_table_[dip] = metric;
+        }
+        // 修改路由表
         for (auto &connection : changed_connections)
         {
             auto dip = connection.first, metric = connection.second;
 
             if (metric == UNREACHABLE)
             {
-
+                // 已有连接断开，查找转发表中下一跳为该地址的表项修改sequence并向所有邻居发送通知报文
+                auto entries = mforward_table_->GetAllEntry();
+                for (auto &entry : entries)
+                {
+                    if (entry.next_hop == dip && entry.sequence % 2 == 0)
+                    {
+                        entry.sequence++;
+                        mforward_table_->UpdateRouteTable(entry);
+                        SendDSDVPacket(entry);
+                    }
+                }
             }
             else
             {
-                
+                // 有新连接
+                auto entry = mforward_table_->Find(dip);
+                if (!entry.has_value() || entry->sequence % 2)
+                {
+                    auto self_entry = mforward_table_->Find(mlocal_ip_addr_);
+                    SendDSDVPacket(*self_entry);
+                }
             }
         }
     }
