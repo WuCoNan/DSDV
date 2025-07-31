@@ -16,6 +16,8 @@ namespace util
     using BufferPtr = std::shared_ptr<Buffer>;
     using IpAddr = uint32_t;
     using MacAddr = uint32_t;
+    
+    constexpr uint32_t IP_BROADCAST=0xffffffff;
 
     BufferPtr make_buffer()
     {

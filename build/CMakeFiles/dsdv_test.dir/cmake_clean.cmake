@@ -1,4 +1,8 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/dsdv_test.dir/src/DSDV.cpp.o"
+  "CMakeFiles/dsdv_test.dir/src/DSDV.cpp.o.d"
+  "CMakeFiles/dsdv_test.dir/src/NetworkLayer.cpp.o"
+  "CMakeFiles/dsdv_test.dir/src/NetworkLayer.cpp.o.d"
   "CMakeFiles/dsdv_test.dir/src/test.cpp.o"
   "CMakeFiles/dsdv_test.dir/src/test.cpp.o.d"
   "dsdv_test"

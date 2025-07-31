@@ -1,25 +1,32 @@
 #include "DSDV.hpp"
 namespace net
 {
-    void DSDVProtocol::SendDSDVPacket(const RouteEntry &entry)
+    void DSDVProtocol::SendDSDVPacket(util::IpAddr dip, const RouteEntry &entry)
     {
         DSDVPacket packet{entry.dip, entry.metric, entry.sequence};
         util::BufferPtr buffer_ptr = util::make_buffer();
         util::Serialize(packet, buffer_ptr);
 
+        if (dip != util::IP_BROADCAST)
+        {
+            mnetwork_layer_->NetSend(dip, "DSDV",buffer_ptr);
+            return;
+        }
+
         for (auto &adjacent_table_entry : madjacent_table_)
         {
-            util::IpAddr dip = adjacent_table_entry.second;
-            mnetwork_layer_->NetSend(dip, buffer_ptr);
+            dip = adjacent_table_entry.second;
+            mnetwork_layer_->NetSend(dip, "DSDV",buffer_ptr);
         }
     }
-    void DSDVProtocol::ReadCallback(util::IpAddr src, util::BufferPtr buffer_ptr)
+    void DSDVProtocol::ReadCallback(util::IpAddr src, const util::BufferPtr &buffer_ptr)
     {
+        //将字节流反序列化为packet
         DSDVPacket packet = util::DeSerialize<DSDVPacket>(buffer_ptr);
-
+        //在转发表中查找目标ip一致的表项
         auto entry = mforward_table_->Find(packet.dip);
-
-        RouteEntry new_entry{packet.dip, src, packet.metric + madjacent_table_[src], packet.sequence};
+        //根据发来的packet和邻接表生成新的entry
+        RouteEntry new_entry{packet.dip, src, std::min(packet.metric+madjacent_table_[src],UNREACHABLE), packet.sequence};
 
         // 已经发现的路由表项
         if (entry.has_value())
@@ -27,12 +34,15 @@ namespace net
             // 断链
             if (new_entry.sequence % 2)
             {
-                // 下一跳正好为发送者，删除表项，立即发送断链信息
+                // 下一跳正好为发送者，修改表项sequence为奇数，立即发送断链信息
                 if (src == entry->next_hop)
                 {
-                    mforward_table_->Erase(entry->dip);
-
-                    SendDSDVPacket(new_entry);
+                    //更新转发表
+                    mforward_table_->UpdateRouteTable(new_entry);
+                    //广播不可达消息
+                    SendDSDVPacket(util::IP_BROADCAST, new_entry);
+                    //如果有，删除广播表中相应的表项
+                    mbroadcast_table_->Erase(new_entry.dip);
                 }
             }
             // 有效链路
@@ -41,8 +51,9 @@ namespace net
                 // 新序号，不管metric直接更新，应该会导致路由振荡？
                 if (entry->sequence < new_entry.sequence)
                 {
+                    //更新转发表
                     mforward_table_->UpdateRouteTable(new_entry);
-
+                    //更新广播表
                     mbroadcast_table_->UpdateRouteTable(new_entry);
                 }
                 // 相同序号
@@ -72,9 +83,10 @@ namespace net
             // 有效链路，立即更新路由表并发送新路由信息
             else
             {
+                //更新转发表
                 mforward_table_->UpdateRouteTable(new_entry);
-
-                SendDSDVPacket(new_entry);
+                //广播新路由
+                SendDSDVPacket(util::IP_BROADCAST, new_entry);
             }
         }
     }
@@ -84,9 +96,10 @@ namespace net
         auto entries = mbroadcast_table_->GetAllEntry();
         for (auto &entry : entries)
         {
+            //自增本节点的sequence
             if (entry.dip == mlocal_ip_addr_)
                 entry.sequence += 2;
-            SendDSDVPacket(entry);
+            SendDSDVPacket(util::IP_BROADCAST, entry);
         }
     }
 
@@ -115,8 +128,9 @@ namespace net
                     if (entry.next_hop == dip && entry.sequence % 2 == 0)
                     {
                         entry.sequence++;
+                        entry.metric = metric;
                         mforward_table_->UpdateRouteTable(entry);
-                        SendDSDVPacket(entry);
+                        SendDSDVPacket(util::IP_BROADCAST, entry);
                     }
                 }
             }
@@ -127,7 +141,8 @@ namespace net
                 if (!entry.has_value() || entry->sequence % 2)
                 {
                     auto self_entry = mforward_table_->Find(mlocal_ip_addr_);
-                    SendDSDVPacket(*self_entry);
+                    //只向该节点发送hello报文，是否应该给他发广播表？
+                    SendDSDVPacket(dip, *self_entry);
                 }
             }
         }

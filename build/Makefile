@@ -129,6 +129,54 @@ dsdv_test/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/build
 .PHONY : dsdv_test/fast
 
+src/DSDV.o: src/DSDV.cpp.o
+.PHONY : src/DSDV.o
+
+# target to build an object file
+src/DSDV.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/DSDV.cpp.o
+.PHONY : src/DSDV.cpp.o
+
+src/DSDV.i: src/DSDV.cpp.i
+.PHONY : src/DSDV.i
+
+# target to preprocess a source file
+src/DSDV.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/DSDV.cpp.i
+.PHONY : src/DSDV.cpp.i
+
+src/DSDV.s: src/DSDV.cpp.s
+.PHONY : src/DSDV.s
+
+# target to generate assembly for a file
+src/DSDV.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/DSDV.cpp.s
+.PHONY : src/DSDV.cpp.s
+
+src/NetworkLayer.o: src/NetworkLayer.cpp.o
+.PHONY : src/NetworkLayer.o
+
+# target to build an object file
+src/NetworkLayer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/NetworkLayer.cpp.o
+.PHONY : src/NetworkLayer.cpp.o
+
+src/NetworkLayer.i: src/NetworkLayer.cpp.i
+.PHONY : src/NetworkLayer.i
+
+# target to preprocess a source file
+src/NetworkLayer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/NetworkLayer.cpp.i
+.PHONY : src/NetworkLayer.cpp.i
+
+src/NetworkLayer.s: src/NetworkLayer.cpp.s
+.PHONY : src/NetworkLayer.s
+
+# target to generate assembly for a file
+src/NetworkLayer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/NetworkLayer.cpp.s
+.PHONY : src/NetworkLayer.cpp.s
+
 src/test.o: src/test.cpp.o
 .PHONY : src/test.o
 
@@ -162,6 +210,12 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... dsdv_test"
+	@echo "... src/DSDV.o"
+	@echo "... src/DSDV.i"
+	@echo "... src/DSDV.s"
+	@echo "... src/NetworkLayer.o"
+	@echo "... src/NetworkLayer.i"
+	@echo "... src/NetworkLayer.s"
 	@echo "... src/test.o"
 	@echo "... src/test.i"
 	@echo "... src/test.s"

@@ -11,7 +11,7 @@ namespace ethernet
 
     public:
         void RegisterNetworkLayerCallback(NetworkLayerCallback network_layer_callback);
-        void EthernetSend();
+        void EthernetSend(util::MacAddr dmac,const util::BufferPtr& buffer_ptr);
         void EthernetRecv();
     };
 }

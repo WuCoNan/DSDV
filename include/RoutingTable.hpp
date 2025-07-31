@@ -6,7 +6,7 @@
 #include "Utils.hpp"
 namespace net
 {
-#define UNREACHABLE 1000
+#define UNREACHABLE 1000U
     struct RouteEntry
     {
         util::IpAddr dip;

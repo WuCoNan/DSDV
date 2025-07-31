@@ -35,11 +35,11 @@ namespace net
             mperiodic_broadcast_.start(mbroadcast_interval_ms_, [this]()
                                        { this->BroadcastRouteTable(); });
         }
-        void ReadCallback(util::IpAddr src, util::BufferPtr buffer_ptr);
+        void ReadCallback(util::IpAddr src, const util::BufferPtr& buffer_ptr);
         void DSDVHandleChangedConnection(const std::unordered_map<util::IpAddr, uint32_t> &changed_connections);
 
     private:
         void BroadcastRouteTable();
-        void SendDSDVPacket(const RouteEntry &entry);
+        void SendDSDVPacket(util::IpAddr,const RouteEntry &entry);
     };
 }
