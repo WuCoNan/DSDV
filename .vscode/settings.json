@@ -4,6 +4,7 @@
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cmake.generator": "Unix Makefiles",
     "files.associations": {
+        ".jsonc": "json",
         "ostream": "cpp",
         "array": "cpp",
         "string": "cpp",
@@ -60,6 +61,7 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "condition_variable": "cpp"
     }
 }

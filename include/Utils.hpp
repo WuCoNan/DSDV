@@ -19,9 +19,9 @@ namespace util
     
     constexpr uint32_t IP_BROADCAST=0xffffffff;
 
-    BufferPtr make_buffer()
+    BufferPtr make_buffer(util::Buffer buffer={})
     {
-        return std::make_shared<Buffer>();
+        return std::make_shared<Buffer>(buffer);
     }
 
     template <typename Packet>
