@@ -10,16 +10,28 @@
 #include <chrono>
 #include <atomic>
 #include <functional>
+#include <list>
 namespace util
 {
+     
+    struct Edge
+    {
+        uint32_t dst_id;
+        uint32_t metric;
+    };
+
     using Buffer = std::deque<std::byte>;
     using BufferPtr = std::shared_ptr<Buffer>;
     using IpAddr = uint32_t;
     using MacAddr = uint32_t;
-    
+    using Graph=std::vector<std::list<Edge>>;
+    using NICSendFunc = std::function<void(uint32_t, uint32_t, util::Buffer)>;
+
+   
+
     constexpr uint32_t IP_BROADCAST=0xffffffff;
 
-    BufferPtr make_buffer(util::Buffer buffer={})
+    static inline BufferPtr make_buffer(util::Buffer buffer={})
     {
         return std::make_shared<Buffer>(buffer);
     }
@@ -69,7 +81,7 @@ namespace util
         }
         void stop()
         {
-            mactive_ = true;
+            mactive_ = false;
             while (mthread_.joinable())
                 mthread_.join();
         }

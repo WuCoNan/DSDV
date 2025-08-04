@@ -57,4 +57,14 @@ namespace net
             mprotocol_table_.emplace(protocol_name, mprotocol_id_++);
         mprotocol_handles_.emplace(mprotocol_table_[protocol_name], protocol_handle);
     }
+
+    void NetworkLayer::RegisterChangedConnectionHandle(ChangedConnectionHandle changed_connection_handle)
+    {
+        mchanged_conn_handle_ = changed_connection_handle;
+    }
+
+    void NetworkLayer::HandleChangedConnection(const std::unordered_map<util::MacAddr, uint32_t>& changed_connections)
+    {
+        mchanged_conn_handle_(changed_connections);
+    }
 }
