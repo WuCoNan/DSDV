@@ -52,7 +52,7 @@ namespace simulator
                     {
                         mreceive_queue_[dst_id].push_back(data);
                     }
-                    std::cout<<"simulator push data from "<<src_id<<" to "<<dst_id<<std::endl;
+                    //std::cout<<"simulator push data from   "<<src_id<<"   to   "<<dst_id<<std::endl;
 
                     mrecv_cvs_[dst_id].notify_one();
                 }
@@ -72,7 +72,7 @@ namespace simulator
 
                     std::swap(recv_copy, mreceive_queue_[self_id]);
                 }
-                std::cout<<"simulator receive data in "<<self_id<<std::endl;
+                //std::cout<<"simulator receive data in   "<<self_id<<std::endl;
                 for (auto &data : recv_copy)
                 {
                     mread_callbacks_[self_id](data);
@@ -140,7 +140,7 @@ namespace simulator
         
         void PushTransQueue(uint32_t src_id, uint32_t dst_id, const Data &bytes)
         {
-            std::cout<<"simulator push data to transmit queue "<<src_id<<"--"<<dst_id<<std::endl;
+            //std::cout<<"simulator push data to transmit queue   "<<src_id<<"------>"<<dst_id<<std::endl;
 
             std::unique_lock<std::mutex> u_lock(mtrans_locks_[src_id]);
             mtransmit_queue_[src_id][dst_id].push_back(bytes);

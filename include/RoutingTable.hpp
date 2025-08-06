@@ -66,7 +66,7 @@ namespace net
             for (auto &table_entry : mtable_)
             {
                 auto entry = table_entry.second;
-                std::cout << "dip :" << entry.dip << "next hop: " << entry.next_hop << "metric: " << entry.metric << "sequence: " << entry.sequence << std::endl;
+                std::cout << "dip :   " << entry.dip << "   next hop :   " << entry.next_hop << "   metric :   " << entry.metric << "   sequence :   " << entry.sequence << std::endl;
             }
         }
 

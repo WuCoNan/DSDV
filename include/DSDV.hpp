@@ -44,5 +44,6 @@ namespace net
     private:
         void BroadcastRouteTable();
         void SendDSDVPacket(util::IpAddr,const RouteEntry &entry);
+        void SendHelloPacket(util::IpAddr dip);
     };
 }

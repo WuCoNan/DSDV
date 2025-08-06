@@ -24,7 +24,7 @@ namespace ethernet
     }
     void EthernetLayer::EthernetSend(util::MacAddr dmac, const util::BufferPtr &buffer_ptr)
     {
-        std::cout<<"EthernetLayer "<<mlocal_mac_addr_<<" send frame to "<<dmac<<std::endl;
+        //std::cout<<"EthernetLayer   "<<mlocal_mac_addr_<<"   send frame to   "<<dmac<<std::endl;
 
         uint32_t dst_id = MacToID(dmac), src_id = MacToID(mlocal_mac_addr_);
         msimulator_->PushTransQueue(src_id, dst_id, *buffer_ptr);
@@ -32,7 +32,7 @@ namespace ethernet
     }
     void EthernetLayer::EthernetRecv(const util::Buffer &buffer)
     {
-        std::cout<<"EthernetLayer "<<mlocal_mac_addr_<<" receive frame"<<std::endl;
+        //std::cout<<"EthernetLayer   "<<mlocal_mac_addr_<<"   receive frame"<<std::endl;
 
         auto buffer_ptr = util::make_buffer(buffer);
         mnetwork_layer_callback_(buffer_ptr);

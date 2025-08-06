@@ -18,7 +18,7 @@ namespace net
     }
     void NetworkLayer::NetSend(util::IpAddr dip, const std::string &protocol_name, const util::BufferPtr &buffer_ptr)
     {
-        std::cout<<"NetworkLayer "<<mlocal_ip_addr_<<" send packet to "<<dip<<std::endl;
+        //std::cout<<"NetworkLayer   "<<mlocal_ip_addr_<<"   send packet to   "<<dip<<std::endl;
 
         AddIpHeader(mlocal_ip_addr_, dip, mprotocol_table_[protocol_name], buffer_ptr);
 
@@ -35,7 +35,7 @@ namespace net
 
         if (dip == mlocal_ip_addr_)
         {
-            std::cout<<"NetworkLayer "<<mlocal_ip_addr_<<" receive packet from sip "<<sip<<std::endl;
+            //std::cout<<"NetworkLayer   "<<mlocal_ip_addr_<<"   receive packet from sip   "<<sip<<std::endl;
 
             mprotocol_handles_[protocol](sip, buffer_ptr);
         }
