@@ -3,6 +3,7 @@
 #include "unordered_map"
 #include <optional>
 #include <memory>
+#include <iostream>
 #include "Utils.hpp"
 namespace net
 {
@@ -59,6 +60,19 @@ namespace net
                 entries.push_back(table_entry.second);
             }
             return entries;
+        }
+        void PrintRouteTable() const
+        {
+            for (auto &table_entry : mtable_)
+            {
+                auto entry = table_entry.second;
+                std::cout << "dip :" << entry.dip << "next hop: " << entry.next_hop << "metric: " << entry.metric << "sequence: " << entry.sequence << std::endl;
+            }
+        }
+
+        void Clear()
+        {
+            mtable_.clear();
         }
     };
 

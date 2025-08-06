@@ -24,7 +24,7 @@ namespace simulator
         std::vector<Node*> mnodes_;
 
         std::vector<ReadCallback> mread_callbacks_;
-        std::vector<AddLinksCallback> madd_links_callbacks_,mremove_link_callbacks_;
+        std::vector<AddLinksCallback> madd_links_callbacks_,mremove_links_callbacks_;
 
         std::vector<std::thread> mtrans_threads_,mrecv_threads_;
         
@@ -32,12 +32,12 @@ namespace simulator
         {
             while (true)
             {
-                std::vector<DataQueue> trans_copy;
+                std::vector<DataQueue> trans_copy(mnodes_.size());
                 {
                     std::unique_lock<std::mutex> trans_lock(mtrans_locks_[src_id]);
 
                     mtrans_cvs_[src_id].wait(trans_lock, [src_id, this]()
-                                             { return !mtransmit_queue_[src_id].empty(); });
+                                             { return !Empty(mtransmit_queue_[src_id]); });
 
                     std::swap(trans_copy, mtransmit_queue_[src_id]);
                 }
@@ -52,6 +52,7 @@ namespace simulator
                     {
                         mreceive_queue_[dst_id].push_back(data);
                     }
+                    std::cout<<"simulator push data from "<<src_id<<" to "<<dst_id<<std::endl;
 
                     mrecv_cvs_[dst_id].notify_one();
                 }
@@ -71,7 +72,7 @@ namespace simulator
 
                     std::swap(recv_copy, mreceive_queue_[self_id]);
                 }
-
+                std::cout<<"simulator receive data in "<<self_id<<std::endl;
                 for (auto &data : recv_copy)
                 {
                     mread_callbacks_[self_id](data);
@@ -92,6 +93,16 @@ namespace simulator
             madd_links_callbacks_[self_id](adjacent_table);
             Receive(self_id);
         }
+        bool Empty(const std::vector<DataQueue>& queue) const
+        {
+            for(auto& elem:queue)
+            {
+                if(!elem.empty())
+                    return false;
+            }
+            return true;
+            
+        }
     public:
         explicit Simulator(int node_num)
             : mgraph_(node_num)
@@ -109,6 +120,8 @@ namespace simulator
             ,mtrans_threads_(graph.size())
             ,mrecv_threads_(graph.size())
             ,mnodes_(graph.size())
+            ,madd_links_callbacks_(graph.size())
+            ,mremove_links_callbacks_(graph.size())
         {
             for (int cur_node = 0; cur_node < mgraph_.size(); cur_node++)
             {
@@ -122,10 +135,12 @@ namespace simulator
                 mtrans_threads_[cur_node]=std::thread([this,cur_node](){this->TransThread(cur_node);});
                 mrecv_threads_[cur_node]=std::thread([this,cur_node](){this->RecvThread(cur_node);});
             }
+            while(true);
         }
         
         void PushTransQueue(uint32_t src_id, uint32_t dst_id, const Data &bytes)
         {
+            std::cout<<"simulator push data to transmit queue "<<src_id<<"--"<<dst_id<<std::endl;
 
             std::unique_lock<std::mutex> u_lock(mtrans_locks_[src_id]);
             mtransmit_queue_[src_id][dst_id].push_back(bytes);
@@ -141,7 +156,7 @@ namespace simulator
         }
         void RegisterRemoveLinksCallback(uint32_t node_id,RemoveLinksCallback removelinks_callback)
         {
-            mremove_link_callbacks_[node_id]=removelinks_callback;
+            mremove_links_callbacks_[node_id]=removelinks_callback;
         }
     };
 }

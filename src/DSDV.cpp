@@ -1,4 +1,5 @@
 #include "DSDV.hpp"
+
 namespace net
 {
     void DSDVProtocol::SendDSDVPacket(util::IpAddr dip, const RouteEntry &entry)
@@ -15,7 +16,7 @@ namespace net
 
         for (auto &adjacent_table_entry : madjacent_table_)
         {
-            dip = adjacent_table_entry.second;
+            dip = adjacent_table_entry.first;
             mnetwork_layer_->NetSend(dip, "DSDV",buffer_ptr);
         }
     }
@@ -27,6 +28,8 @@ namespace net
         auto entry = mforward_table_->Find(packet.dip);
         //根据发来的packet和邻接表生成新的entry
         RouteEntry new_entry{packet.dip, src, std::min(packet.metric+madjacent_table_[src],UNREACHABLE), packet.sequence};
+
+        std::cout<<"DSDV receive entry: dip "<<new_entry.dip<<" metric "<<new_entry.metric<<" sequence "<<new_entry.sequence<<std::endl;
 
         // 已经发现的路由表项
         if (entry.has_value())
@@ -77,13 +80,15 @@ namespace net
         else
         {
             // 断链，不做任何处理
-            if (entry->sequence % 2)
+            if (new_entry.sequence % 2)
             {
             }
             // 有效链路，立即更新路由表并发送新路由信息
             else
             {
                 //更新转发表
+                std::cout<<"New Route!!!"<<std::endl;
+
                 mforward_table_->UpdateRouteTable(new_entry);
                 //广播新路由
                 SendDSDVPacket(util::IP_BROADCAST, new_entry);
@@ -94,13 +99,25 @@ namespace net
     void DSDVProtocol::BroadcastRouteTable()
     {
         auto entries = mbroadcast_table_->GetAllEntry();
+
+        mbroadcast_table_->Clear();
+
+        std::cout<<"node "<<mlocal_ip_addr_<<"'s RouteTable:"<<std::endl;
+        mforward_table_->PrintRouteTable();
+
+
         for (auto &entry : entries)
         {
             //自增本节点的sequence
-            if (entry.dip == mlocal_ip_addr_)
-                entry.sequence += 2;
+            std::cout<<"broadcast"<<std::endl;
+                
             SendDSDVPacket(util::IP_BROADCAST, entry);
         }
+
+        auto self_entry=mforward_table_->Find(mlocal_ip_addr_);
+        self_entry->sequence+=2;
+        mforward_table_->UpdateRouteTable(*self_entry);
+        SendDSDVPacket(util::IP_BROADCAST,*self_entry);
     }
 
     void DSDVProtocol::DSDVHandleChangedConnection(const std::unordered_map<util::IpAddr, uint32_t> &changed_connections)
@@ -142,7 +159,9 @@ namespace net
                 {
                     auto self_entry = mforward_table_->Find(mlocal_ip_addr_);
                     //只向该节点发送hello报文，是否应该给他发广播表？
+                    std::cout<<"node "<<mlocal_ip_addr_<<" 发送self_entry to "<<dip<<std::endl;
                     SendDSDVPacket(dip, *self_entry);
+                    
                 }
             }
         }

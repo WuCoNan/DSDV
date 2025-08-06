@@ -29,10 +29,14 @@ namespace net
         {
             mnetwork_layer_->RegisterProtocolHandle("DSDV", std::bind(&DSDVProtocol::ReadCallback, this, std::placeholders::_1, std::placeholders::_2));
 
+            mnetwork_layer_->RegisterChangedConnectionHandle(std::bind(&DSDVProtocol::DSDVHandleChangedConnection,this,std::placeholders::_1));
+            
             mforward_table_->UpdateRouteTable({mlocal_ip_addr_, mlocal_ip_addr_, 0, 0});
 
             mperiodic_broadcast_.start(mbroadcast_interval_ms_, [this]()
                                        { this->BroadcastRouteTable(); });
+
+            mbroadcast_table_=new RoutingTable{};
         }
         void ReadCallback(util::IpAddr src, const util::BufferPtr& buffer_ptr);
         void DSDVHandleChangedConnection(const std::unordered_map<util::IpAddr, uint32_t> &changed_connections);

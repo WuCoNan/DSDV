@@ -5,7 +5,7 @@ namespace net
     void NetworkLayer::AddIpHeader(util::IpAddr sip, util::IpAddr dip, uint32_t protocol, const util::BufferPtr &buffer_ptr)
     {
         IpHeader ip_header;
-        ip_header.sip = dip;
+        ip_header.sip = sip;
         ip_header.dip = dip;
         ip_header.protocol = protocol;
 
@@ -18,6 +18,8 @@ namespace net
     }
     void NetworkLayer::NetSend(util::IpAddr dip, const std::string &protocol_name, const util::BufferPtr &buffer_ptr)
     {
+        std::cout<<"NetworkLayer "<<mlocal_ip_addr_<<" send packet to "<<dip<<std::endl;
+
         AddIpHeader(mlocal_ip_addr_, dip, mprotocol_table_[protocol_name], buffer_ptr);
 
         util::MacAddr dmac = IpToMac(dip);
@@ -33,6 +35,8 @@ namespace net
 
         if (dip == mlocal_ip_addr_)
         {
+            std::cout<<"NetworkLayer "<<mlocal_ip_addr_<<" receive packet from sip "<<sip<<std::endl;
+
             mprotocol_handles_[protocol](sip, buffer_ptr);
         }
         else
