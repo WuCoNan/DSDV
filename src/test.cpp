@@ -1,22 +1,44 @@
 #include "Simulator.hpp"
+std::vector<std::vector<uint32_t>> edges={
+    {0,1,1},
+    {0,2,3},
+    {0,3,3},
+    {1,2,2},
+    {1,4,2},
+    {1,5,4},
+    {2,3,2},
+    {2,5,1},
+    {3,6,2},
+    {4,5,2},
+    {5,6,1}
+};
+std::vector<std::vector<int>> modify_edges={
+    {1,5,1,5000},
+    {1,5,UNREACHABLE,10000}
+};
 
 
-
-
-util::Graph GenerateGraph()
+util::Graph GenerateGraph(const std::vector<std::vector<uint32_t>>& edges)
 {
-    util::Graph graph(3);
-    graph[0].push_back({1,5});
-    graph[1].push_back({0,5});
-    graph[1].push_back({2,3});
-    graph[2].push_back({1,3});
+    util::Graph graph;
+    for(auto& edge:edges)
+    {
+        auto s=edge[0],t=edge[1],metric=edge[2];
+        if(s>=graph.size())
+            graph.resize(s+1);
+        graph[s].push_back({t,metric});
+        if(t>=graph.size())
+            graph.resize(t+1);
+        graph[t].push_back({s,metric});
+    }
     return graph;
 }
 int main()
 {
-    auto graph=GenerateGraph();
+    auto graph=GenerateGraph(edges);
 
     simulator::Simulator sim(graph);
+    sim.SetModifyLinks(modify_edges);
     sim.Start();
     
     return 0;

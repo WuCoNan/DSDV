@@ -22,7 +22,7 @@ namespace net
 
             dip = adjacent_table_entry.first;
             mnetwork_layer_->NetSend(dip, "DSDV", buffer_ptr);
-            std::cout << "node   " << mlocal_ip_addr_ << "   send to   " << dip << "   about   " << packet.dip << std::endl;
+            // std::cout << "node   " << mlocal_ip_addr_ << "   send to   " << dip << "   about   " << packet.dip << std::endl;
         }
     }
     void DSDVProtocol::ReadCallback(util::IpAddr src, const util::BufferPtr &buffer_ptr)
@@ -34,7 +34,7 @@ namespace net
         // 根据发来的packet和邻接表生成新的entry
         RouteEntry new_entry{packet.dip, src, std::min(packet.metric + madjacent_table_[src], UNREACHABLE), packet.sequence};
 
-        std::cout << "node   " << mlocal_ip_addr_ << "   DSDV receive entry: dip   " << new_entry.dip << "   metric   " << new_entry.metric << "   sequence   " << new_entry.sequence << std::endl;
+        //std::cout << "node   " << mlocal_ip_addr_ << "   DSDV receive entry: dip   " << new_entry.dip << "   metric   " << new_entry.metric << "   sequence   " << new_entry.sequence << std::endl;
 
         // 已经发现的路由表项
         if (entry.has_value())
@@ -59,20 +59,68 @@ namespace net
                 // 新序号，不管metric直接更新，应该会导致路由振荡？
                 if (entry->sequence < new_entry.sequence)
                 {
-                    // 更新转发表
-                    mforward_table_->UpdateRouteTable(new_entry);
-                    // 更新广播表
-                    mbroadcast_table_->UpdateRouteTable(new_entry);
+                    // metric更优
+                    if (entry->metric > new_entry.metric)
+                    {
+                        // 更新转发表并广播
+                        mforward_table_->UpdateRouteTable(new_entry);
+                        SendDSDVPacket(util::IP_BROADCAST, new_entry);
+                    }
+                    // metric相等
+                    else if (entry->metric == new_entry.metric)
+                    {
+                        mforward_table_->UpdateRouteTable(new_entry);
+                        SendDSDVPacket(util::IP_BROADCAST, new_entry);
+                    }
+                    else
+                    {
+                        if (entry->next_hop == src)
+                        {
+                            mforward_table_->UpdateRouteTable(new_entry);
+                            SendDSDVPacket(util::IP_BROADCAST, new_entry);
+                        }
+                        else
+                        {
+                            auto old_entry = mbroadcast_table_->Find(new_entry.dip);
+                            if (!old_entry.has_value() || old_entry->metric > new_entry.metric)
+                                mbroadcast_table_->UpdateRouteTable(new_entry);
+                        }
+                    }
                 }
                 // 相同序号
                 else if (entry->sequence == new_entry.sequence)
                 {
-                    // metric更优才更新
+                    // metric更优
                     if (entry->metric > new_entry.metric)
                     {
+                        // 更新转发表并广播
                         mforward_table_->UpdateRouteTable(new_entry);
-
-                        mbroadcast_table_->UpdateRouteTable(new_entry);
+                        SendDSDVPacket(util::IP_BROADCAST, new_entry);
+                    }
+                    // metric相等
+                    else if (entry->metric == new_entry.metric)
+                    {
+                        // 先加入广播表
+                        if (entry->next_hop != src)
+                        {
+                            auto old_entry = mbroadcast_table_->Find(new_entry.dip);
+                            if (!old_entry.has_value() || old_entry->metric > new_entry.metric)
+                                mbroadcast_table_->UpdateRouteTable(new_entry);
+                        }
+                    }
+                    else
+                    {
+                        if (entry->next_hop == src)
+                        {
+                            mforward_table_->UpdateRouteTable(new_entry);
+                            SendDSDVPacket(util::IP_BROADCAST, new_entry);
+                        }
+                        else
+                        {
+                            auto old_entry = mbroadcast_table_->Find(new_entry.dip);
+                            if (!old_entry.has_value() || old_entry->metric > new_entry.metric)
+                                mbroadcast_table_->UpdateRouteTable(new_entry);
+                        }
                     }
                 }
                 // 旧序号，不做任何处理
@@ -96,13 +144,6 @@ namespace net
 
                 mforward_table_->UpdateRouteTable(new_entry);
                 // 广播新路由
-                std::cout << "node  " << mlocal_ip_addr_ << "   broadcast new entry about " << new_entry.dip << "   to   ";
-                for (auto &adjacent_node : madjacent_table_)
-                {
-                    std::cout << adjacent_node.first << "   ";
-                }
-                std::cout << std::endl;
-
                 SendDSDVPacket(util::IP_BROADCAST, new_entry);
             }
         }
@@ -110,27 +151,29 @@ namespace net
 
     void DSDVProtocol::BroadcastRouteTable()
     {
-        auto entries = mbroadcast_table_->GetAllEntry();
-
+        auto entries=mbroadcast_table_->GetAllEntry();
         mbroadcast_table_->Clear();
-        if (mlocal_ip_addr_ == 2)
+
+        auto self_entry=mforward_table_->Find(mlocal_ip_addr_);
+        self_entry->sequence+=2;
+        mforward_table_->UpdateRouteTable(*self_entry);
+        SendDSDVPacket(util::IP_BROADCAST,*self_entry);
+
+        for(auto& entry:entries)
+        {
+            auto old_entry=mforward_table_->Find(entry.dip);
+            if(!old_entry.has_value()||((old_entry->sequence%2||old_entry->metric>entry.metric)&&old_entry->sequence<=entry.sequence))
+            {
+                mforward_table_->UpdateRouteTable(entry);
+                SendDSDVPacket(util::IP_BROADCAST,entry);
+            }
+        }
+        if(mlocal_ip_addr_==1)
         {
             std::cout << "node " << mlocal_ip_addr_ << " RouteTable:" << std::endl;
-            mforward_table_->PrintRouteTable();
+        mforward_table_->PrintRouteTable();
         }
-
-        for (auto &entry : entries)
-        {
-            // 自增本节点的sequence
-            // std::cout << "node " << mlocal_ip_addr_ << " broadcast!!!" << std::endl;
-
-            SendDSDVPacket(util::IP_BROADCAST, entry);
-        }
-
-        auto self_entry = mforward_table_->Find(mlocal_ip_addr_);
-        self_entry->sequence += 2;
-        mforward_table_->UpdateRouteTable(*self_entry);
-        SendDSDVPacket(util::IP_BROADCAST, *self_entry);
+        
     }
 
     void DSDVProtocol::DSDVHandleChangedConnection(const std::unordered_map<util::IpAddr, uint32_t> &changed_connections)
@@ -152,6 +195,8 @@ namespace net
             if (metric == UNREACHABLE)
             {
                 // 已有连接断开，查找转发表中下一跳为该地址的表项修改sequence并向所有邻居发送通知报文
+                std::cout<<"disconnected"<<std::endl;
+
                 auto entries = mforward_table_->GetAllEntry();
                 for (auto &entry : entries)
                 {
@@ -166,8 +211,9 @@ namespace net
             }
             else
             {
-                // 有新连接
                 auto entry = mforward_table_->Find(dip);
+
+                // 有新连接
                 if (!entry.has_value() || entry->sequence % 2)
                 {
                     // auto self_entry = mforward_table_->Find(mlocal_ip_addr_);
@@ -181,7 +227,7 @@ namespace net
 
     void DSDVProtocol::SendHelloPacket(util::IpAddr dip)
     {
-        std::cout << "node   " << mlocal_ip_addr_ << "   send Hello packet to   " << dip << std::endl;
+        // std::cout << "node   " << mlocal_ip_addr_ << "   send Hello packet to   " << dip << std::endl;
 
         auto entries = mforward_table_->GetAllEntry();
         for (auto &entry : entries)
