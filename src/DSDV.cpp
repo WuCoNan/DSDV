@@ -2,19 +2,23 @@
 
 namespace net
 {
+    //向指定ip地址发送路由表项
     void DSDVProtocol::SendDSDVPacket(util::IpAddr dip, const RouteEntry &entry)
     {
+        //根据entry构造dsdv packet
         DSDVPacket packet{entry.dip, entry.metric, entry.sequence};
 
+        //单播地址
         if (dip != util::IP_BROADCAST)
         {
-            util::BufferPtr buffer_ptr = util::make_buffer();
+            util::BufferPtr buffer_ptr = util::make_buffer();     //上下层统一使用buffer容器存放数据，但好像可以不用智能指针？？？？
             util::Serialize(packet, buffer_ptr);
 
             mnetwork_layer_->NetSend(dip, "DSDV", buffer_ptr);
             return;
         }
-
+        
+        //广播地址
         for (auto &adjacent_table_entry : madjacent_table_)
         {
             util::BufferPtr buffer_ptr = util::make_buffer();
@@ -25,6 +29,8 @@ namespace net
             // std::cout << "node   " << mlocal_ip_addr_ << "   send to   " << dip << "   about   " << packet.dip << std::endl;
         }
     }
+
+    //收到dsdv packet
     void DSDVProtocol::ReadCallback(util::IpAddr src, const util::BufferPtr &buffer_ptr)
     {
         // 将字节流反序列化为packet
@@ -69,18 +75,24 @@ namespace net
                     // metric相等
                     else if (entry->metric == new_entry.metric)
                     {
+                        // 更新转发表并广播
                         mforward_table_->UpdateRouteTable(new_entry);
                         SendDSDVPacket(util::IP_BROADCAST, new_entry);
                     }
+                    //metric更大
                     else
                     {
+                        //当前表项metric变大了
                         if (entry->next_hop == src)
                         {
+                            //更新转发表并广播
                             mforward_table_->UpdateRouteTable(new_entry);
                             SendDSDVPacket(util::IP_BROADCAST, new_entry);
                         }
+                        //不是当前表项
                         else
                         {
+                            //将其更新到广播表（优先取metric更小的）
                             auto old_entry = mbroadcast_table_->Find(new_entry.dip);
                             if (!old_entry.has_value() || old_entry->metric > new_entry.metric)
                                 mbroadcast_table_->UpdateRouteTable(new_entry);
