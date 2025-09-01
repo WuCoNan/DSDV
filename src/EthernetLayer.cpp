@@ -45,4 +45,8 @@ namespace ethernet
     {
         mchanged_conn_handle_(disconnections);
     }
+    int EthernetLayer::GetMTU() const
+    {
+        return mmtu_;
+    }
 }

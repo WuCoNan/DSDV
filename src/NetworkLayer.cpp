@@ -2,12 +2,14 @@
 
 namespace net
 {
-    void NetworkLayer::AddIpHeader(util::IpAddr sip, util::IpAddr dip, uint32_t protocol, const util::BufferPtr &buffer_ptr)
+    void NetworkLayer::AddIpHeader(util::IpAddr sip, util::IpAddr dip, uint32_t protocol, const util::BufferPtr &buffer_ptr,uint16_t identification,uint16_t flag_fragment)
     {
         IpHeader ip_header;
         ip_header.sip = sip;
         ip_header.dip = dip;
         ip_header.protocol = protocol;
+        ip_header.identification=identification;
+        ip_header.flag_fragment=flag_fragment;
 
         util::Serialize(ip_header, buffer_ptr);
     }
@@ -20,11 +22,16 @@ namespace net
     {
         //std::cout<<"NetworkLayer   "<<mlocal_ip_addr_<<"   send packet to   "<<dip<<std::endl;
 
-        AddIpHeader(mlocal_ip_addr_, dip, mprotocol_table_[protocol_name], buffer_ptr);
+        //AddIpHeader(mlocal_ip_addr_, dip, mprotocol_table_[protocol_name], buffer_ptr);
+
+        auto fragments=CreateFragments(buffer_ptr);
 
         util::MacAddr dmac = IpToMac(dip);
 
-        methernet_layer_->EthernetSend(dmac, buffer_ptr);
+        for(auto& fragment:fragments)
+        {
+            methernet_layer_->EthernetSend(dmac, buffer_ptr);
+        }
     }
     void NetworkLayer::NetRecv(const util::BufferPtr &buffer_ptr)
     {
@@ -70,5 +77,14 @@ namespace net
     void NetworkLayer::HandleChangedConnection(const std::unordered_map<util::MacAddr, uint32_t>& changed_connections)
     {
         mchanged_conn_handle_(changed_connections);
+    }
+
+    NetworkLayer::IpFragments NetworkLayer::CreateFragments(util::IpAddr dip, const std::string &protocol_name, const util::BufferPtr &buffer_ptr)
+    {
+        if(methernet_layer_->GetMTU()>=sizeof(IpHeader)+buffer_ptr->size()/8)
+        {
+            AddIpHeader(mlocal_ip_addr_,dip,mprotocol_table_[protocol_name],buffer_ptr,,)
+        }
+            
     }
 }

@@ -112,7 +112,7 @@ namespace net
                     // metric相等
                     else if (entry->metric == new_entry.metric)
                     {
-                        // 先加入广播表
+                        //不是当前表项 将其更新到广播表（优先取metric更小的）
                         if (entry->next_hop != src)
                         {
                             auto old_entry = mbroadcast_table_->Find(new_entry.dip);
@@ -120,15 +120,20 @@ namespace net
                                 mbroadcast_table_->UpdateRouteTable(new_entry);
                         }
                     }
+                    //metric更大
                     else
                     {
+                        //当前表项metric变大了
                         if (entry->next_hop == src)
                         {
+                            //更新转发表并广播
                             mforward_table_->UpdateRouteTable(new_entry);
                             SendDSDVPacket(util::IP_BROADCAST, new_entry);
                         }
+                        //不是当前表项
                         else
                         {
+                            //将其更新到广播表（优先取metric更小的）
                             auto old_entry = mbroadcast_table_->Find(new_entry.dip);
                             if (!old_entry.has_value() || old_entry->metric > new_entry.metric)
                                 mbroadcast_table_->UpdateRouteTable(new_entry);
@@ -161,16 +166,19 @@ namespace net
         }
     }
 
+    //周期广播路由表
     void DSDVProtocol::BroadcastRouteTable()
     {
         auto entries=mbroadcast_table_->GetAllEntry();
         mbroadcast_table_->Clear();
 
+        //自增序号并广播
         auto self_entry=mforward_table_->Find(mlocal_ip_addr_);
         self_entry->sequence+=2;
         mforward_table_->UpdateRouteTable(*self_entry);
         SendDSDVPacket(util::IP_BROADCAST,*self_entry);
 
+        //从广播表中选择路由表项发送
         for(auto& entry:entries)
         {
             auto old_entry=mforward_table_->Find(entry.dip);
@@ -180,14 +188,17 @@ namespace net
                 SendDSDVPacket(util::IP_BROADCAST,entry);
             }
         }
+
+
         if(mlocal_ip_addr_==1)
         {
             std::cout << "node " << mlocal_ip_addr_ << " RouteTable:" << std::endl;
-        mforward_table_->PrintRouteTable();
+            mforward_table_->PrintRouteTable();
         }
         
     }
 
+    //链路状态改变处理函数
     void DSDVProtocol::DSDVHandleChangedConnection(const std::unordered_map<util::IpAddr, uint32_t> &changed_connections)
     {
         // 修改邻接表
@@ -225,7 +236,7 @@ namespace net
             {
                 auto entry = mforward_table_->Find(dip);
 
-                // 有新连接
+                // 有新连接 向其发送hello报文
                 if (!entry.has_value() || entry->sequence % 2)
                 {
                     // auto self_entry = mforward_table_->Find(mlocal_ip_addr_);
@@ -237,6 +248,7 @@ namespace net
         }
     }
 
+    //hello报文发送函数,向目标发送本节点的路由表
     void DSDVProtocol::SendHelloPacket(util::IpAddr dip)
     {
         // std::cout << "node   " << mlocal_ip_addr_ << "   send Hello packet to   " << dip << std::endl;

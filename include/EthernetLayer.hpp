@@ -22,6 +22,8 @@ namespace ethernet
         util::MacAddr mlocal_mac_addr_;
         uint32_t MacToID(util::MacAddr mac_addr);
 
+        static constexpr int mmtu_ = 1500;
+
     public:
         EthernetLayer(util::MacAddr local_mac_addr, simulator::Simulator *sim);
         void RegisterNetworkLayerCallback(NetworkLayerCallback network_layer_callback);
@@ -32,5 +34,7 @@ namespace ethernet
         void AddLinks(const std::unordered_map<uint32_t, uint32_t> &new_connections);
 
         void RemoveLinks(const std::unordered_map<uint32_t, uint32_t> &disconnections);
+
+        int GetMTU() const;
     };
 }
