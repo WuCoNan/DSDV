@@ -129,6 +129,30 @@ dsdv_test/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/build
 .PHONY : dsdv_test/fast
 
+src/Application.o: src/Application.cpp.o
+.PHONY : src/Application.o
+
+# target to build an object file
+src/Application.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/Application.cpp.o
+.PHONY : src/Application.cpp.o
+
+src/Application.i: src/Application.cpp.i
+.PHONY : src/Application.i
+
+# target to preprocess a source file
+src/Application.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/Application.cpp.i
+.PHONY : src/Application.cpp.i
+
+src/Application.s: src/Application.cpp.s
+.PHONY : src/Application.s
+
+# target to generate assembly for a file
+src/Application.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/Application.cpp.s
+.PHONY : src/Application.cpp.s
+
 src/DSDV.o: src/DSDV.cpp.o
 .PHONY : src/DSDV.o
 
@@ -234,6 +258,9 @@ help:
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
 	@echo "... dsdv_test"
+	@echo "... src/Application.o"
+	@echo "... src/Application.i"
+	@echo "... src/Application.s"
 	@echo "... src/DSDV.o"
 	@echo "... src/DSDV.i"
 	@echo "... src/DSDV.s"
