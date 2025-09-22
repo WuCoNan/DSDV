@@ -38,7 +38,7 @@ namespace net
 
             mbroadcast_table_=new RoutingTable{};
         }
-        void ReadCallback(util::IpAddr src, const util::BufferPtr& buffer_ptr);
+        void ReadCallback(util::IpAddr src, util::BitStreamPtr& bits_ptr);
         void DSDVHandleChangedConnection(const std::unordered_map<util::IpAddr, uint32_t> &changed_connections);
 
     private:

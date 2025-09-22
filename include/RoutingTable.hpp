@@ -25,7 +25,7 @@ namespace net
     public:
         std::optional<util::IpAddr> GetNextHop(util::IpAddr dip) const
         {
-            if (mtable_.find(dip) != mtable_.end())
+            if (mtable_.find(dip) != mtable_.end()&&mtable_.at(dip).sequence%2==0)
                 return mtable_.at(dip).next_hop;
             return std::nullopt;
         }

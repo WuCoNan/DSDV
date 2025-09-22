@@ -22,20 +22,22 @@ namespace ethernet
     {
         mchanged_conn_handle_ = changed_connection_handle;
     }
-    void EthernetLayer::EthernetSend(util::MacAddr dmac, const util::BufferPtr &buffer_ptr)
+    void EthernetLayer::EthernetSend(util::MacAddr dmac, util::BitStreamPtr& bit_ptr)
     {
         //std::cout<<"EthernetLayer   "<<mlocal_mac_addr_<<"   send frame to   "<<dmac<<std::endl;
 
         uint32_t dst_id = MacToID(dmac), src_id = MacToID(mlocal_mac_addr_);
-        msimulator_->PushTransQueue(src_id, dst_id, *buffer_ptr);
+        std::deque<std::byte> data(bit_ptr->Data(),bit_ptr->Data()+bit_ptr->Size());
+        msimulator_->PushTransQueue(src_id, dst_id, data);
 
     }
-    void EthernetLayer::EthernetRecv(const util::Buffer &buffer)
+    void EthernetLayer::EthernetRecv(const std::deque<std::byte>& data)
     {
         //std::cout<<"EthernetLayer   "<<mlocal_mac_addr_<<"   receive frame"<<std::endl;
-
-        auto buffer_ptr = util::make_buffer(buffer);
-        mnetwork_layer_callback_(buffer_ptr);
+        auto bit_ptr=util::BitStream::Create();
+        bit_ptr->Serialize(&data.front(),&data.front()+data.size());
+        
+        mnetwork_layer_callback_(bit_ptr);
     }
     void EthernetLayer::AddLinks(const std::unordered_map<uint32_t, uint32_t> &new_connections)
     {

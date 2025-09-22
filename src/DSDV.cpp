@@ -11,30 +11,35 @@ namespace net
         //单播地址
         if (dip != util::IP_BROADCAST)
         {
-            util::BufferPtr buffer_ptr = util::make_buffer();     //上下层统一使用buffer容器存放数据，但好像可以不用智能指针？？？？
-            util::Serialize(packet, buffer_ptr);
+            //util::BufferPtr buffer_ptr = util::make_buffer();     //上下层统一使用buffer容器存放数据，但好像可以不用智能指针？？？？
+            //util::Serialize(packet, buffer_ptr);
+            auto bit_ptr=util::BitStream::Create();
+            bit_ptr->Serialize(packet);
 
-            mnetwork_layer_->NetSend(dip, "DSDV", buffer_ptr);
+            mnetwork_layer_->NetSend(dip, "DSDV", bit_ptr,true);
             return;
         }
         
         //广播地址
         for (auto &adjacent_table_entry : madjacent_table_)
         {
-            util::BufferPtr buffer_ptr = util::make_buffer();
-            util::Serialize(packet, buffer_ptr);
+            //util::BufferPtr buffer_ptr = util::make_buffer();
+            //util::Serialize(packet, buffer_ptr);
+            auto bit_ptr=util::BitStream::Create();
+            bit_ptr->Serialize(packet);
 
             dip = adjacent_table_entry.first;
-            mnetwork_layer_->NetSend(dip, "DSDV", buffer_ptr);
+            mnetwork_layer_->NetSend(dip, "DSDV", bit_ptr,true);
             // std::cout << "node   " << mlocal_ip_addr_ << "   send to   " << dip << "   about   " << packet.dip << std::endl;
         }
     }
 
     //收到dsdv packet
-    void DSDVProtocol::ReadCallback(util::IpAddr src, const util::BufferPtr &buffer_ptr)
+    void DSDVProtocol::ReadCallback(util::IpAddr src, util::BitStreamPtr& bit_ptr)
     {
         // 将字节流反序列化为packet
-        DSDVPacket packet = util::DeSerialize<DSDVPacket>(buffer_ptr);
+        //DSDVPacket packet = util::DeSerialize<DSDVPacket>(buffer_ptr);
+        auto packet=bit_ptr->DeSerialize<DSDVPacket>();
         // 在转发表中查找目标ip一致的表项
         auto entry = mforward_table_->Find(packet.dip);
         // 根据发来的packet和邻接表生成新的entry

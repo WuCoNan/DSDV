@@ -10,19 +10,21 @@ namespace net
         {
             util::IpAddr sip;
             util::IpAddr dip;
-            uint8_t protocol;
-            uint8_t ttl;
             uint16_t checksum;
             uint16_t identification;
-            uint16_t flag_fragment;
+            uint16_t offset;
+            uint8_t flags;
+            uint8_t protocol;
+            //uint8_t ttl;
+            //uint16_t flag_fragment;
         };
 
-        using ProtocolHandle = std::function<void(util::IpAddr, util::BufferPtr)>;
+        using ProtocolHandle = std::function<void(util::IpAddr, util::BitStreamPtr& bit_ptr)>;
         using ProtocolTable = std::unordered_map<std::string, uint8_t>;
         using ProtocolHandles = std::unordered_map<uint8_t, ProtocolHandle>;
         using ChangedConnectionHandle = std::function<void(const std::unordered_map<util::IpAddr, uint32_t> &)>;
-        using IpFragments = std::vector<util::BufferPtr>;
-        using FragmentBuffers = std::unordered_map<uint64_t, std::list<std::pair<IpHeader, util::BufferPtr>>>;
+        using IpFragments = std::vector<util::BitStreamPtr>;
+        using FragmentBuffers = std::unordered_map<uint64_t, std::list<std::pair<uint32_t, util::BitStreamPtr>>>;
 
         ProtocolTable mprotocol_table_;
         uint8_t mprotocol_id_;
@@ -32,7 +34,8 @@ namespace net
         ChangedConnectionHandle mchanged_conn_handle_;
 
         std::atomic<uint16_t> midentification_counter_;
-
+        FragmentBuffers mfragment_buffers_;
+        
     public:
         RoutingTable *mforward_table_;
         util::IpAddr mlocal_ip_addr_;
@@ -45,20 +48,20 @@ namespace net
             methernet_layer_->RegisterChangedConnectionHandle(std::bind(&NetworkLayer::HandleChangedConnection, this, std::placeholders::_1));
             mforward_table_ = new RoutingTable{};
         };
-        void NetSend(util::IpAddr dip, const std::string &protocol_name, const util::BufferPtr &buffer_ptr);
-        void NetRecv(const util::BufferPtr &buffer_ptr);
+        void NetSend(util::IpAddr dip, const std::string &protocol_name, util::BitStreamPtr& bit_ptr,bool flag);
+        void NetRecv(util::BitStreamPtr& bit_ptr);
         void RegisterProtocolHandle(const std::string &protocol_name, ProtocolHandle protocol_handle);
         void RegisterChangedConnectionHandle(ChangedConnectionHandle changed_connection_handle);
 
     private:
-        void AddIpHeader(util::IpAddr sip, util::IpAddr dip, uint32_t protocol, const util::BufferPtr &buffer_ptr,uint16_t identification,uint16_t flag_fragment);
-        IpHeader RemoveIpHeader(const util::BufferPtr &buffer_ptr);
+        void AddIpHeader(util::IpAddr sip, util::IpAddr dip, uint32_t protocol, util::BitStreamPtr& bit_ptr,uint16_t identification,uint16_t offset,uint8_t flags);
+        IpHeader RemoveIpHeader(util::BitStreamPtr& bit_ptr);
         util::MacAddr IpToMac(util::IpAddr ip_addr)
         {
             return util::MacAddr(ip_addr);
         }
         void HandleChangedConnection(const std::unordered_map<util::MacAddr, uint32_t> &);
-        IpFragments CreateFragments(util::IpAddr dip, const std::string &protocol_name, const util::BufferPtr &buffer_ptr);
-        std::optional<util::BufferPtr> ReassembleFragments(const util::BufferPtr &buffer_ptr);
+        IpFragments CreateFragments(util::IpAddr dip, const std::string &protocol_name, util::BitStreamPtr& bit_ptr);
+        std::optional<util::BitStreamPtr> ReassembleFragments(util::BitStreamPtr& bit_ptr,const IpHeader& ip_header);
     };
 }

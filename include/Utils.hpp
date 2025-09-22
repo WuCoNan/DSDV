@@ -11,46 +11,25 @@
 #include <atomic>
 #include <functional>
 #include <list>
+#include "Noncopyable.hpp"
 namespace util
 {
-     
+
     struct Edge
     {
         uint32_t dst_id;
         uint32_t metric;
     };
-
-    using Buffer = std::deque<std::byte>;
-    using BufferPtr = std::shared_ptr<Buffer>;
+    class BitStream;
+    using BitStreamPtr = std::shared_ptr<BitStream>;
     using IpAddr = uint32_t;
     using MacAddr = uint32_t;
-    using Graph=std::vector<std::list<Edge>>;
-    using NICSendFunc = std::function<void(uint32_t, uint32_t, util::Buffer)>;
+    using Graph = std::vector<std::list<Edge>>;
+    using NICSendFunc = std::function<void(uint32_t, uint32_t, util::BitStreamPtr)>;
 
-   
+    constexpr uint32_t IP_BROADCAST = 0xffffffff;
 
-    constexpr uint32_t IP_BROADCAST=0xffffffff;
-
-    static inline BufferPtr make_buffer(util::Buffer buffer={})
-    {
-        return std::make_shared<Buffer>(buffer);
-    }
-
-    template <typename Packet>
-    void Serialize(const Packet &packet, BufferPtr buffer_ptr)
-    {
-        auto packet_begin = reinterpret_cast<const std::byte *>(&packet);
-        buffer_ptr->insert(buffer_ptr->begin(), packet_begin, packet_begin + sizeof(Packet));
-    }
-
-    template <typename Packet>
-    Packet DeSerialize(BufferPtr buffer_ptr)
-    {
-        Packet packet;
-        std::copy_n(buffer_ptr->begin(), sizeof(Packet), reinterpret_cast<std::byte *>(&packet));
-        buffer_ptr->erase(buffer_ptr->begin(), buffer_ptr->begin() + sizeof(Packet));
-        return packet;
-    }
+    
     class PeriodicExecutor
     {
     public:
@@ -88,4 +67,61 @@ namespace util
         std::atomic<bool> mactive_;
         std::thread mthread_;
     };
+
+
+
+    class BitStream : public std::enable_shared_from_this<BitStream>
+    {
+    private:
+        BitStream() {}
+        std::deque<std::byte> buffer_;
+
+    public:
+        static BitStreamPtr Create() { return BitStreamPtr(new BitStream()); }
+
+        size_t Size() const { return buffer_.size(); }
+
+        template <typename T>
+        void Serialize(const T &packet)
+        {
+            const std::byte * packet_begin = reinterpret_cast<const std::byte *>(&packet);
+            buffer_.insert(buffer_.begin(), packet_begin, packet_begin + sizeof(T));
+        }
+
+        template<typename T>
+        void Serialize(const T* first,const T* last)
+        {
+            auto start=reinterpret_cast<const std::byte*>(first),end=reinterpret_cast<const std::byte*>(last);
+            buffer_.insert(buffer_.begin(),start,end);
+        }
+
+        template <typename T>
+        T DeSerialize()
+        {
+            T packet;
+            std::copy_n(buffer_.begin(), sizeof(packet), reinterpret_cast<std::byte *>(&packet));
+            buffer_.erase(buffer_.begin(), buffer_.begin() + sizeof(packet));
+            return packet;
+        }
+
+        void Append(const BitStreamPtr &other, size_t len)
+        {
+            buffer_.insert(buffer_.end(), other->buffer_.begin(), other->buffer_.begin() + len);
+        }
+        void Append(const BitStreamPtr &other)
+        {
+            Append(other, other->Size());
+        }
+
+        
+        BitStreamPtr Extract(size_t len)
+        {
+            auto ret = BitStream::Create();
+            ret->Append(shared_from_this(), len);
+            buffer_.erase(buffer_.begin(), buffer_.begin() + len);
+            return ret;
+        }
+        const std::byte* Data() const {return &*buffer_.begin();}
+    };
+    
 }

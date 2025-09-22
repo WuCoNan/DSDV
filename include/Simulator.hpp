@@ -130,6 +130,11 @@ namespace simulator
             }
             auto modify_thread=std::thread(std::bind(&Simulator::ModifyThread,this));
 
+            for(int cur_node=0;cur_node<mnodes_.size();cur_node++)
+            {
+                mnodes_[cur_node]->BussinessStart();
+            }
+
             while (true)
                 ;
         }
