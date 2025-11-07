@@ -1,8 +1,10 @@
 #pragma once
-#include "RoutingTable.hpp"
 #include "EthernetLayer.hpp"
+#include "Utils.hpp"
+#include <optional>
 namespace net
 {
+    class RoutingTable;
     class NetworkLayer
     {
     private:
@@ -39,20 +41,17 @@ namespace net
     public:
         RoutingTable *mforward_table_;
         util::IpAddr mlocal_ip_addr_;
-
+        constexpr static uint8_t subnetNodeNum_ =5;
     public:
-        NetworkLayer(util::IpAddr local_ip_addr, ethernet::EthernetLayer *ethernet_layer)
-            : mlocal_ip_addr_(local_ip_addr), methernet_layer_(ethernet_layer), mprotocol_id_(0),midentification_counter_(0)
-        {
-            methernet_layer_->RegisterNetworkLayerCallback(std::bind(&NetworkLayer::NetRecv, this, std::placeholders::_1));
-            methernet_layer_->RegisterChangedConnectionHandle(std::bind(&NetworkLayer::HandleChangedConnection, this, std::placeholders::_1));
-            mforward_table_ = new RoutingTable{};
-        };
+        NetworkLayer(util::IpAddr local_ip_addr, ethernet::EthernetLayer *ethernet_layer);
+        
         void NetSend(util::IpAddr dip, const std::string &protocol_name, util::BitStreamPtr& bit_ptr,bool flag);
         void NetRecv(util::BitStreamPtr& bit_ptr);
         void RegisterProtocolHandle(const std::string &protocol_name, ProtocolHandle protocol_handle);
         void RegisterChangedConnectionHandle(ChangedConnectionHandle changed_connection_handle);
-
+        static bool isInSameSubnet(util::IpAddr ip1,util::IpAddr ip2)  {return (ip1/NetworkLayer::subnetNodeNum_)==(ip2/NetworkLayer::subnetNodeNum_);};
+        static bool IsGateway(util::IpAddr ip)  {return (ip%NetworkLayer::subnetNodeNum_)==0;};
+        static util::IpAddr GetSubnetGateway(util::IpAddr ip) {return util::IpAddr(ip - (ip % NetworkLayer::subnetNodeNum_));};
     private:
         void AddIpHeader(util::IpAddr sip, util::IpAddr dip, uint32_t protocol, util::BitStreamPtr& bit_ptr,uint16_t identification,uint16_t offset,uint8_t flags);
         IpHeader RemoveIpHeader(util::BitStreamPtr& bit_ptr);

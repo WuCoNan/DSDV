@@ -5,6 +5,7 @@
 #include <memory>
 #include <iostream>
 #include "Utils.hpp"
+#include "NetworkLayer.hpp"
 namespace net
 {
 #define UNREACHABLE 1000U
@@ -21,12 +22,28 @@ namespace net
     private:
         using Table = std::unordered_map<util::IpAddr, RouteEntry>;
         Table mtable_;
+        util::IpAddr mlocal_ip_addr_;
+        void UpdateSelfRouteEntry()
+        {
+            RouteEntry self_entry{mlocal_ip_addr_, mlocal_ip_addr_, 0, 0};
+            UpdateRouteTable(self_entry);
+        }
 
     public:
+        RoutingTable() = default;
+        explicit RoutingTable(util::IpAddr local_ip_addr) : mlocal_ip_addr_(local_ip_addr)
+        {
+            UpdateSelfRouteEntry();
+        }
         std::optional<util::IpAddr> GetNextHop(util::IpAddr dip) const
         {
             if (mtable_.find(dip) != mtable_.end()&&mtable_.at(dip).sequence%2==0)
                 return mtable_.at(dip).next_hop;
+            if(!NetworkLayer::isInSameSubnet(dip,mlocal_ip_addr_)&&!NetworkLayer::IsGateway(mlocal_ip_addr_)&&mtable_.find(NetworkLayer::GetSubnetGateway(mlocal_ip_addr_))!=mtable_.end()&&mtable_.at(NetworkLayer::GetSubnetGateway(mlocal_ip_addr_)).sequence%2==0)
+                return mtable_.at(NetworkLayer::GetSubnetGateway(mlocal_ip_addr_)).next_hop;
+            if(NetworkLayer::IsGateway(mlocal_ip_addr_)&&mtable_.find(NetworkLayer::GetSubnetGateway(dip))!=mtable_.end()&&mtable_.at(NetworkLayer::GetSubnetGateway(dip)).sequence%2==0)
+                return mtable_.at(NetworkLayer::GetSubnetGateway(dip)).next_hop;
+                
             return std::nullopt;
         }
 

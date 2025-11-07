@@ -1,5 +1,6 @@
 #include "Application.hpp"
 #include <random>
+#include "iostream"
 namespace application
 {
     void Application::SetInterval(uint interval_ms)

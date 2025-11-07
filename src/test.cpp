@@ -1,4 +1,5 @@
 #include "Simulator.hpp"
+/*
 std::vector<std::vector<uint32_t>> edges={
     {0,1,1},
     {0,2,3},
@@ -11,6 +12,24 @@ std::vector<std::vector<uint32_t>> edges={
     {3,6,2},
     {4,5,2},
     {5,6,1}
+};
+*/
+
+std::vector<std::vector<uint32_t>> edges=
+{
+    {0,1,1},
+    {0,2,3},
+    {0,3,3},
+    {0,5,4},
+    {1,2,2},
+    {1,4,2},
+    {2,3,3},
+    {5,6,1},
+    {5,7,3},
+    {5,8,3},
+    {6,7,2},
+    {6,9,2},
+    {7,8,3}
 };
 std::vector<std::vector<int>> modify_edges={
     {1,5,1,5000},
@@ -38,7 +57,7 @@ int main()
     auto graph=GenerateGraph(edges);
 
     simulator::Simulator sim(graph);
-    sim.SetModifyLinks(modify_edges);
+    //sim.SetModifyLinks(modify_edges);
     sim.Start();
     
     return 0;

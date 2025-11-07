@@ -1,51 +1,66 @@
 #include "DSDV.hpp"
-
+#include "NetworkLayer.hpp"
 namespace net
 {
-    //向指定ip地址发送路由表项
+    DSDVProtocol::DSDVProtocol(NetworkLayer *network_layer) : mnetwork_layer_(network_layer), mforward_table_(network_layer->mforward_table_), mbroadcast_table_(new RoutingTable{}), mlocal_ip_addr_(network_layer->mlocal_ip_addr_)
+    {
+        mnetwork_layer_->RegisterProtocolHandle("DSDV", std::bind(&DSDVProtocol::ReadCallback, this, std::placeholders::_1, std::placeholders::_2));
+
+        mnetwork_layer_->RegisterChangedConnectionHandle(std::bind(&DSDVProtocol::DSDVHandleChangedConnection, this, std::placeholders::_1));
+
+        // mforward_table_->UpdateRouteTable({mlocal_ip_addr_, mlocal_ip_addr_, 0, 0});
+
+        mperiodic_broadcast_.start(mbroadcast_interval_ms_, [this]()
+                                   { this->BroadcastRouteTable(); });
+
+        mbroadcast_table_ = new RoutingTable();
+    }
+    // 向指定ip地址发送路由表项
     void DSDVProtocol::SendDSDVPacket(util::IpAddr dip, const RouteEntry &entry)
     {
-        //根据entry构造dsdv packet
+        // 根据entry构造dsdv packet
         DSDVPacket packet{entry.dip, entry.metric, entry.sequence};
 
-        //单播地址
+        // 单播地址
         if (dip != util::IP_BROADCAST)
         {
-            //util::BufferPtr buffer_ptr = util::make_buffer();     //上下层统一使用buffer容器存放数据，但好像可以不用智能指针？？？？
-            //util::Serialize(packet, buffer_ptr);
-            auto bit_ptr=util::BitStream::Create();
+            // util::BufferPtr buffer_ptr = util::make_buffer();     //上下层统一使用buffer容器存放数据，但好像可以不用智能指针？？？？
+            // util::Serialize(packet, buffer_ptr);
+            auto bit_ptr = util::BitStream::Create();
             bit_ptr->Serialize(packet);
 
-            mnetwork_layer_->NetSend(dip, "DSDV", bit_ptr,true);
+            if (NetworkLayer::isInSameSubnet(dip, entry.dip) || (NetworkLayer::IsGateway(dip) && NetworkLayer::IsGateway(entry.dip) && NetworkLayer::IsGateway(mlocal_ip_addr_)))
+                mnetwork_layer_->NetSend(dip, "DSDV", bit_ptr, true);
             return;
         }
-        
-        //广播地址
+
+        // 广播地址
         for (auto &adjacent_table_entry : madjacent_table_)
         {
-            //util::BufferPtr buffer_ptr = util::make_buffer();
-            //util::Serialize(packet, buffer_ptr);
-            auto bit_ptr=util::BitStream::Create();
+            // util::BufferPtr buffer_ptr = util::make_buffer();
+            // util::Serialize(packet, buffer_ptr);
+            auto bit_ptr = util::BitStream::Create();
             bit_ptr->Serialize(packet);
 
             dip = adjacent_table_entry.first;
-            mnetwork_layer_->NetSend(dip, "DSDV", bit_ptr,true);
+            if (NetworkLayer::isInSameSubnet(dip, entry.dip) || (NetworkLayer::IsGateway(dip) && NetworkLayer::IsGateway(entry.dip) && NetworkLayer::IsGateway(mlocal_ip_addr_)))
+                mnetwork_layer_->NetSend(dip, "DSDV", bit_ptr, true);
             // std::cout << "node   " << mlocal_ip_addr_ << "   send to   " << dip << "   about   " << packet.dip << std::endl;
         }
     }
 
-    //收到dsdv packet
-    void DSDVProtocol::ReadCallback(util::IpAddr src, util::BitStreamPtr& bit_ptr)
+    // 收到dsdv packet
+    void DSDVProtocol::ReadCallback(util::IpAddr src, util::BitStreamPtr &bit_ptr)
     {
         // 将字节流反序列化为packet
-        //DSDVPacket packet = util::DeSerialize<DSDVPacket>(buffer_ptr);
-        auto packet=bit_ptr->DeSerialize<DSDVPacket>();
+        // DSDVPacket packet = util::DeSerialize<DSDVPacket>(buffer_ptr);
+        auto packet = bit_ptr->DeSerialize<DSDVPacket>();
         // 在转发表中查找目标ip一致的表项
         auto entry = mforward_table_->Find(packet.dip);
         // 根据发来的packet和邻接表生成新的entry
         RouteEntry new_entry{packet.dip, src, std::min(packet.metric + madjacent_table_[src], UNREACHABLE), packet.sequence};
 
-        //std::cout << "node   " << mlocal_ip_addr_ << "   DSDV receive entry: dip   " << new_entry.dip << "   metric   " << new_entry.metric << "   sequence   " << new_entry.sequence << std::endl;
+        // std::cout << "node   " << mlocal_ip_addr_ << "   DSDV receive entry: dip   " << new_entry.dip << "   metric   " << new_entry.metric << "   sequence   " << new_entry.sequence << std::endl;
 
         // 已经发现的路由表项
         if (entry.has_value())
@@ -84,20 +99,20 @@ namespace net
                         mforward_table_->UpdateRouteTable(new_entry);
                         SendDSDVPacket(util::IP_BROADCAST, new_entry);
                     }
-                    //metric更大
+                    // metric更大
                     else
                     {
-                        //当前表项metric变大了
+                        // 当前表项metric变大了
                         if (entry->next_hop == src)
                         {
-                            //更新转发表并广播
+                            // 更新转发表并广播
                             mforward_table_->UpdateRouteTable(new_entry);
                             SendDSDVPacket(util::IP_BROADCAST, new_entry);
                         }
-                        //不是当前表项
+                        // 不是当前表项
                         else
                         {
-                            //将其更新到广播表（优先取metric更小的）
+                            // 将其更新到广播表（优先取metric更小的）
                             auto old_entry = mbroadcast_table_->Find(new_entry.dip);
                             if (!old_entry.has_value() || old_entry->metric > new_entry.metric)
                                 mbroadcast_table_->UpdateRouteTable(new_entry);
@@ -117,7 +132,7 @@ namespace net
                     // metric相等
                     else if (entry->metric == new_entry.metric)
                     {
-                        //不是当前表项 将其更新到广播表（优先取metric更小的）
+                        // 不是当前表项 将其更新到广播表（优先取metric更小的）
                         if (entry->next_hop != src)
                         {
                             auto old_entry = mbroadcast_table_->Find(new_entry.dip);
@@ -125,20 +140,20 @@ namespace net
                                 mbroadcast_table_->UpdateRouteTable(new_entry);
                         }
                     }
-                    //metric更大
+                    // metric更大
                     else
                     {
-                        //当前表项metric变大了
+                        // 当前表项metric变大了
                         if (entry->next_hop == src)
                         {
-                            //更新转发表并广播
+                            // 更新转发表并广播
                             mforward_table_->UpdateRouteTable(new_entry);
                             SendDSDVPacket(util::IP_BROADCAST, new_entry);
                         }
-                        //不是当前表项
+                        // 不是当前表项
                         else
                         {
-                            //将其更新到广播表（优先取metric更小的）
+                            // 将其更新到广播表（优先取metric更小的）
                             auto old_entry = mbroadcast_table_->Find(new_entry.dip);
                             if (!old_entry.has_value() || old_entry->metric > new_entry.metric)
                                 mbroadcast_table_->UpdateRouteTable(new_entry);
@@ -171,39 +186,37 @@ namespace net
         }
     }
 
-    //周期广播路由表
+    // 周期广播路由表
     void DSDVProtocol::BroadcastRouteTable()
     {
-        auto entries=mbroadcast_table_->GetAllEntry();
+        auto entries = mbroadcast_table_->GetAllEntry();
         mbroadcast_table_->Clear();
 
-        //自增序号并广播
-        auto self_entry=mforward_table_->Find(mlocal_ip_addr_);
-        self_entry->sequence+=2;
+        // 自增序号并广播
+        auto self_entry = mforward_table_->Find(mlocal_ip_addr_);
+        self_entry->sequence += 2;
         mforward_table_->UpdateRouteTable(*self_entry);
-        SendDSDVPacket(util::IP_BROADCAST,*self_entry);
+        SendDSDVPacket(util::IP_BROADCAST, *self_entry);
 
-        //从广播表中选择路由表项发送
-        for(auto& entry:entries)
+        // 从广播表中选择路由表项发送
+        for (auto &entry : entries)
         {
-            auto old_entry=mforward_table_->Find(entry.dip);
-            if(!old_entry.has_value()||((old_entry->sequence%2||old_entry->metric>entry.metric)&&old_entry->sequence<=entry.sequence))
+            auto old_entry = mforward_table_->Find(entry.dip);
+            if (!old_entry.has_value() || ((old_entry->sequence % 2 || old_entry->metric > entry.metric) && old_entry->sequence <= entry.sequence))
             {
                 mforward_table_->UpdateRouteTable(entry);
-                SendDSDVPacket(util::IP_BROADCAST,entry);
+                SendDSDVPacket(util::IP_BROADCAST, entry);
             }
         }
 
-
-        if(mlocal_ip_addr_==1)
+        if (mlocal_ip_addr_ == 1)
         {
             std::cout << "node " << mlocal_ip_addr_ << " RouteTable:" << std::endl;
             mforward_table_->PrintRouteTable();
         }
-        
     }
 
-    //链路状态改变处理函数
+    // 链路状态改变处理函数
     void DSDVProtocol::DSDVHandleChangedConnection(const std::unordered_map<util::IpAddr, uint32_t> &changed_connections)
     {
         // 修改邻接表
@@ -223,7 +236,7 @@ namespace net
             if (metric == UNREACHABLE)
             {
                 // 已有连接断开，查找转发表中下一跳为该地址的表项修改sequence并向所有邻居发送通知报文
-                std::cout<<"disconnected"<<std::endl;
+                std::cout << "disconnected" << std::endl;
 
                 auto entries = mforward_table_->GetAllEntry();
                 for (auto &entry : entries)
@@ -253,7 +266,7 @@ namespace net
         }
     }
 
-    //hello报文发送函数,向目标发送本节点的路由表
+    // hello报文发送函数,向目标发送本节点的路由表
     void DSDVProtocol::SendHelloPacket(util::IpAddr dip)
     {
         // std::cout << "node   " << mlocal_ip_addr_ << "   send Hello packet to   " << dip << std::endl;
