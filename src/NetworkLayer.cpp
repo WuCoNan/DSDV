@@ -48,6 +48,8 @@ namespace net
         {
             methernet_layer_->EthernetSend(dmac, fragment);
         }
+        if(mlocal_ip_addr_==1)
+            std::cout<<"NetworkLayer   "<<mlocal_ip_addr_<<"   send packet to   "<<dip<<"   via   "<<*next_hop<<std::endl;
     }
     void NetworkLayer::NetRecv(util::BitStreamPtr &bit_ptr)
     {
@@ -68,6 +70,10 @@ namespace net
         else
         {
             auto next_hop = mforward_table_->GetNextHop(dip);
+            
+            if(sip==1)
+                std::cout<<"NetworkLayer   "<<mlocal_ip_addr_<<"   forward packet to dip   "<<dip<<"   via   "<<*next_hop<<std::endl;
+
             if (next_hop.has_value())
             {
                 AddIpHeader(sip, dip, protocol, bit_ptr, identification, offset, flags);

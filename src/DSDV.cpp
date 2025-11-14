@@ -209,11 +209,13 @@ namespace net
             }
         }
 
+        /*
         if (mlocal_ip_addr_ == 1)
         {
             std::cout << "node " << mlocal_ip_addr_ << " RouteTable:" << std::endl;
             mforward_table_->PrintRouteTable();
         }
+        */
     }
 
     // 链路状态改变处理函数

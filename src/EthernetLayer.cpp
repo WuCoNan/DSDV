@@ -24,7 +24,8 @@ namespace ethernet
     }
     void EthernetLayer::EthernetSend(util::MacAddr dmac, util::BitStreamPtr& bit_ptr)
     {
-        //std::cout<<"EthernetLayer   "<<mlocal_mac_addr_<<"   send frame to   "<<dmac<<std::endl;
+        
+        //std::cout<<"EthernetLayer:   "<<mlocal_mac_addr_<<"   send frame to   "<<dmac<<std::endl;
 
         uint32_t dst_id = MacToID(dmac), src_id = MacToID(mlocal_mac_addr_);
         std::deque<std::byte> data(bit_ptr->Data(),bit_ptr->Data()+bit_ptr->Size());

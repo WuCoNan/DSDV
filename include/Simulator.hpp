@@ -116,7 +116,7 @@ namespace simulator
         {
             for (int cur_node = 0; cur_node < mgraph_.size(); cur_node++)
             {
-                mnodes_[cur_node] = new Node{(uint32_t)cur_node, this};
+                mnodes_[cur_node] = new Node{(uint32_t)cur_node, this, (uint32_t)mgraph_.size()};
             }
         }
         void Start()

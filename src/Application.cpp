@@ -15,7 +15,7 @@ namespace application
     {
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, 6);
+        std::uniform_int_distribution<> dis(0, node_num_-1);
         int random_id = dis(gen);
         while (random_id == node_id_)
             random_id = dis(gen);
