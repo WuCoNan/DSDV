@@ -201,6 +201,30 @@ src/EthernetLayer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/EthernetLayer.cpp.s
 .PHONY : src/EthernetLayer.cpp.s
 
+src/Logger.o: src/Logger.cpp.o
+.PHONY : src/Logger.o
+
+# target to build an object file
+src/Logger.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/Logger.cpp.o
+.PHONY : src/Logger.cpp.o
+
+src/Logger.i: src/Logger.cpp.i
+.PHONY : src/Logger.i
+
+# target to preprocess a source file
+src/Logger.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/Logger.cpp.i
+.PHONY : src/Logger.cpp.i
+
+src/Logger.s: src/Logger.cpp.s
+.PHONY : src/Logger.s
+
+# target to generate assembly for a file
+src/Logger.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/dsdv_test.dir/build.make CMakeFiles/dsdv_test.dir/src/Logger.cpp.s
+.PHONY : src/Logger.cpp.s
+
 src/NetworkLayer.o: src/NetworkLayer.cpp.o
 .PHONY : src/NetworkLayer.o
 
@@ -267,6 +291,9 @@ help:
 	@echo "... src/EthernetLayer.o"
 	@echo "... src/EthernetLayer.i"
 	@echo "... src/EthernetLayer.s"
+	@echo "... src/Logger.o"
+	@echo "... src/Logger.i"
+	@echo "... src/Logger.s"
 	@echo "... src/NetworkLayer.o"
 	@echo "... src/NetworkLayer.i"
 	@echo "... src/NetworkLayer.s"

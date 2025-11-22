@@ -5,7 +5,7 @@ namespace application
     class Application
     {
     public:
-        explicit Application(uint node_id,net::NetworkLayer* network_layer,uint32_t node_num,uint interval_ms=1000,uint once_size=10000)
+        explicit Application(uint node_id,net::NetworkLayer* network_layer,uint32_t node_num,uint interval_ms=5000,uint once_size=10000)
                             :node_id_(node_id)
                             ,network_layer_(network_layer)
                             ,node_num_(node_num)

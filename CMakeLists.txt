@@ -13,4 +13,4 @@ set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
 
 # 生成可执行文件
-add_executable(dsdv_test src/test.cpp src/DSDV.cpp src/NetworkLayer.cpp src/EthernetLayer.cpp src/Application.cpp)
+add_executable(dsdv_test src/test.cpp src/DSDV.cpp src/NetworkLayer.cpp src/EthernetLayer.cpp src/Application.cpp src/Logger.cpp)

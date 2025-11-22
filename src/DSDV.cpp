@@ -1,5 +1,6 @@
 #include "DSDV.hpp"
 #include "NetworkLayer.hpp"
+#include "Logger.hpp"
 namespace net
 {
     DSDVProtocol::DSDVProtocol(NetworkLayer *network_layer) : mnetwork_layer_(network_layer), mforward_table_(network_layer->mforward_table_), mbroadcast_table_(new RoutingTable{}), mlocal_ip_addr_(network_layer->mlocal_ip_addr_)
@@ -196,6 +197,7 @@ namespace net
         auto self_entry = mforward_table_->Find(mlocal_ip_addr_);
         self_entry->sequence += 2;
         mforward_table_->UpdateRouteTable(*self_entry);
+        LOG_INFO("(Node %u DSDV) : add sequence and broadcast DSDV packet \n", mlocal_ip_addr_);
         SendDSDVPacket(util::IP_BROADCAST, *self_entry);
 
         // 从广播表中选择路由表项发送
@@ -272,6 +274,7 @@ namespace net
     void DSDVProtocol::SendHelloPacket(util::IpAddr dip)
     {
         // std::cout << "node   " << mlocal_ip_addr_ << "   send Hello packet to   " << dip << std::endl;
+        LOG_INFO("(Node %u DSDV) : send Hello packet to %d.\n", mlocal_ip_addr_, dip);
 
         auto entries = mforward_table_->GetAllEntry();
         for (auto &entry : entries)

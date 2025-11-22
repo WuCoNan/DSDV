@@ -1,5 +1,6 @@
 #include "NetworkLayer.hpp"
 #include "RoutingTable.hpp"
+#include "Logger.hpp"
 namespace net
 {
     NetworkLayer::NetworkLayer(util::IpAddr local_ip_addr, ethernet::EthernetLayer *ethernet_layer)
@@ -38,18 +39,22 @@ namespace net
             *next_hop = dip;
 
         if (!next_hop.has_value() && !flag)
+        {
+            LOG_WARNING("(Node %u NetworkLayer) : No next hop found for %d.\n", mlocal_ip_addr_, dip);
             return;
+        }
+            
 
         auto fragments = CreateFragments(dip, protocol_name, bit_ptr);
 
         util::MacAddr dmac = IpToMac(*next_hop);
 
+        LOG_INFO("(Node %u NetworkLayer) : send packet to %d via %d.\n", mlocal_ip_addr_, dip, *next_hop);
+
         for (auto &fragment : fragments)
         {
             methernet_layer_->EthernetSend(dmac, fragment);
         }
-        if(mlocal_ip_addr_==1)
-            std::cout<<"NetworkLayer   "<<mlocal_ip_addr_<<"   send packet to   "<<dip<<"   via   "<<*next_hop<<std::endl;
     }
     void NetworkLayer::NetRecv(util::BitStreamPtr &bit_ptr)
     {
@@ -71,8 +76,7 @@ namespace net
         {
             auto next_hop = mforward_table_->GetNextHop(dip);
             
-            if(sip==1)
-                std::cout<<"NetworkLayer   "<<mlocal_ip_addr_<<"   forward packet to dip   "<<dip<<"   via   "<<*next_hop<<std::endl;
+            
 
             if (next_hop.has_value())
             {
@@ -80,10 +84,13 @@ namespace net
 
                 util::MacAddr dmac = IpToMac(*next_hop);
 
+                LOG_INFO("(Node %u NetworkLayer) : forward packet to %d via %d.\n", mlocal_ip_addr_, dip, *next_hop);
+
                 methernet_layer_->EthernetSend(dmac, bit_ptr);
             }
             else
             {
+                LOG_WARNING("(Node %u NetworkLayer) : No next hop found for %d. Drop the packet.\n", mlocal_ip_addr_, dip);
             }
         }
     }

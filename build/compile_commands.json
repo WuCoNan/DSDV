@@ -28,5 +28,11 @@
   "command": "/usr/bin/c++  -I/home/wuconan/codes/DSDV/include -g -g -O0 -std=gnu++17 -o CMakeFiles/dsdv_test.dir/src/Application.cpp.o -c /home/wuconan/codes/DSDV/src/Application.cpp",
   "file": "/home/wuconan/codes/DSDV/src/Application.cpp",
   "output": "CMakeFiles/dsdv_test.dir/src/Application.cpp.o"
+},
+{
+  "directory": "/home/wuconan/codes/DSDV/build",
+  "command": "/usr/bin/c++  -I/home/wuconan/codes/DSDV/include -g -g -O0 -std=gnu++17 -o CMakeFiles/dsdv_test.dir/src/Logger.cpp.o -c /home/wuconan/codes/DSDV/src/Logger.cpp",
+  "file": "/home/wuconan/codes/DSDV/src/Logger.cpp",
+  "output": "CMakeFiles/dsdv_test.dir/src/Logger.cpp.o"
 }
 ]
